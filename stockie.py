@@ -8,15 +8,15 @@ from discord.ext import tasks, commands
 load_dotenv()
 DISCORD_TOKEN = os.getenv('DISCORD_TOKEN')
 GUILD_NAME = os.getenv('GUILD_NAME')
-#CHANNEL_NAME = os.getenv('CHANNEL_NAME')
 
+#initial values will be populated here, probs should get saved in a DB
 ticker_lists = {
-    "eddie": []
+    "eddie": ["SPY", "ACN"]
 }
 
 client = discord.Client()
 
-@tasks.loop(seconds=10)
+@tasks.loop(seconds=86400)
 async def create_loop():
 
     for channel_name in list(ticker_lists.keys()):
@@ -46,12 +46,37 @@ async def on_message(message):
 
         if command == "!add":
             ticker = tokens[1]
-            ticker_lists[channel_name].append(ticker)
-            print(ticker + " added to list " + channel_name)
+
+            message1 = stock_api.get_time_series_daily(ticker)
+            if message1 == "":
+                message1 = "Error on ticker " + ticker + ": please verify that symbol exists and try again."
+                await channel.send(message1)
+
+            else:
+                ticker_lists[channel_name].append(ticker)
+                message = ticker + " added"
+                print(message)
+                await channel.send(message)
 
         elif command == "!remove":
             ticker = tokens[1]
             ticker_lists[channel_name].remove(ticker)
-            print(ticker + " removed from list " + channel_name)
+            message = ticker + " removed"
+            print(message)
+            await channel.send(message)
+
+        elif command == "!get":
+            ticker = tokens[1]
+            message = stock_api.get_time_series_daily(ticker, delay=0)
+            if message == "":
+                message = "Error on ticker " + ticker + ": please verify that symbol exists and try again."
+            await channel.send(message)
+
+        elif command == "!help":
+            message = """COMMANDS\n
+                        *get* to retrieve a single ticker's daily data\n
+                        *add* to add a specific ticker to the list for the channel\n
+                        *remove* to remove a ticker from the list"""
+            await channel.send(message)
 
 client.run(DISCORD_TOKEN)

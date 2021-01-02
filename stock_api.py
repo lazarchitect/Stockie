@@ -4,14 +4,20 @@ from time import sleep
 
 API_KEY = "K7S4C5A154C6WILN"
 
-def get_time_series_daily(ticker):
+def get_time_series_daily(ticker, delay):
     SYMBOL = ticker
     HOST = "https://www.alphavantage.co"
+    PATH = "/query"
     FUNCTION = "TIME_SERIES_DAILY"
-    URL = HOST + "/query?function="+ FUNCTION + "&symbol=" + SYMBOL + "&apikey=" + API_KEY
+    URL = HOST + PATH
+    params = {
+        "function": FUNCTION,
+        "symbol": SYMBOL,
+        "apikey": API_KEY
+    }
 
-    sleep(12)
-    response_dict = get(URL).json()
+    response_dict = get(URL, params = params).json()
+    sleep(delay)
 
     keys = response_dict.keys()
     today = date.today()
@@ -20,8 +26,13 @@ def get_time_series_daily(ticker):
     try:
         daily_data = response_dict['Time Series (Daily)']
     except KeyError:
-        print(response_dict)
+        print("KeyError on Time Series (Daily) for ticker " + ticker)
         return ""
+
+    except Exception as e:
+        print(type(e))
+        print("SOME OTHER ERROR")
+
     most_recent_date = list(daily_data.keys())[0]
 
     most_recent_data_dict = daily_data[most_recent_date]
@@ -42,7 +53,7 @@ def get_stock_data(ticker_list):
     message = ""
 
     for ticker in ticker_list:
-        most_recent_data = get_time_series_daily(ticker)
+        most_recent_data = get_time_series_daily(ticker, delay=12)
 
         message += most_recent_data
 
@@ -50,4 +61,4 @@ def get_stock_data(ticker_list):
 
 if __name__ == "__main__":
     ticker = input(">>")
-    print(get_time_series_daily(ticker))
+    print(get_time_series_daily(ticker, delay=12))
